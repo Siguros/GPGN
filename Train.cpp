@@ -760,6 +760,7 @@ void Train(const int numTrain, const int epochs) {
 						std::mt19937 Randgen;
 						Randgen.seed(std::time(0));
 						double RandNum = 0;
+						double RandAct = 0;
 						std::uniform_real_distribution<double> dist(0, 1);
 						double maxConductance = static_cast<AnalogNVM*>(arrayIH->cell[0][0])->maxConductance;
 						double ResetThr = static_cast<AnalogNVM*>(arrayIH->cell[0][0])->ThrConductance;
@@ -784,6 +785,7 @@ void Train(const int numTrain, const int epochs) {
 										Isum += arrayIH->ReadCell(j,k);
 										if (static_cast<AnalogNVM*>(arrayIH->cell[j][k])->conductanceGp > ResetThr && RandNum>param->ActDeviceIH) {
 											static_cast<AnalogNVM*>(arrayIH->cell[j][k])->SaturationPCM = true;
+
 										}
 										else if (static_cast<AnalogNVM*>(arrayIH->cell[j][k])->conductanceGn > ResetThr && RandNum > param->ActDeviceIH) {
 											static_cast<AnalogNVM*>(arrayIH->cell[j][k])->SaturationPCM = true;
@@ -826,6 +828,7 @@ void Train(const int numTrain, const int epochs) {
 									double inputSum = 0;  // weight sum current of input vector
 									for (int k = 0; k < param->nHide; k++) {
 										RandNum = dist(Randgen);
+
 										//std::cout << RandNum;
 										Isum += arrayHO->ReadCell(j, k);
 										if (static_cast<AnalogNVM*>(arrayHO->cell[j][k])->conductanceGp > ResetThr && RandNum > param->ActDeviceHO) {
@@ -871,6 +874,14 @@ void Train(const int numTrain, const int epochs) {
 													double maxLatencyLTP = 0;
 													for (int j = 0; j < param->nHide; j++) {
 														if (static_cast<AnalogNVM*>(arrayIH->cell[j][k])->SaturationPCM) { //SET Saturation 된 경우 RESET operation을 진행
+															RandAct = dist(Randgen);
+															if (RandAct < static_cast<AnalogNVM*>(arrayIH->cell[0][0])->PCMActivity) {
+																static_cast<AnalogNVM*>(arrayIH->cell[j][k])->PCMActivityOn = true;
+															}
+															else {
+																static_cast<AnalogNVM*>(arrayIH->cell[j][k])->PCMActivityOn = false;
+															}
+									
 															arrayIH->EraseCell(j, k, param->maxWeight, param->minWeight);
 															numWriteCellPerOperation += 1;
 															if (static_cast<AnalogNVM*>(arrayIH->cell[j][k])->writeLatencyLTP > maxLatencyLTP) {
@@ -956,6 +967,13 @@ void Train(const int numTrain, const int epochs) {
 						
 														if (static_cast<AnalogNVM*>(arrayHO->cell[j][k])->SaturationPCM) { //SET Saturation 된 경우 RESET operation을 진행
 															//expc += 1;
+															RandAct = dist(Randgen);
+															if (RandAct < static_cast<AnalogNVM*>(arrayHO->cell[0][0])->PCMActivity) {
+																static_cast<AnalogNVM*>(arrayHO->cell[j][k])->PCMActivityOn = true;
+															}
+															else {
+																static_cast<AnalogNVM*>(arrayHO->cell[j][k])->PCMActivityOn = false;
+															}
 															arrayHO->EraseCell(j, k, param->maxWeight, param->minWeight);
 															/*double Gp = static_cast<AnalogNVM*>(arrayHO->cell[j][k])->conductanceGp;
 															double Gn = static_cast<AnalogNVM*>(arrayHO->cell[j][k])->conductanceGn;
@@ -1050,8 +1068,8 @@ void Train(const int numTrain, const int epochs) {
 															
 															//ERAESE시 weight 값 0.5
 															/*std::cout << "w: " << weightGp;*/
-															arrayIH->WriteCell(j, k, weight1[j][k]-0.5, param->maxWeight, param->minWeight, false);
-															//arrayIH->ReWriteCell(j, k, weight1[j][k], param->maxWeight, param->minWeight); // regular true: weight update 사용, false: 비례하여 update 
+															//arrayIH->WriteCell(j, k, weight1[j][k]-0.5, param->maxWeight, param->minWeight, false);
+															arrayIH->ReWriteCell(j, k, weight1[j][k], param->maxWeight, param->minWeight); // regular true: weight update 사용, false: 비례하여 update 
 															//weight1[j][k] = arrayIH->ConductanceToWeight(j, k, param->maxWeight, param->minWeight);
 															/*double w = arrayIH->ConductanceToWeight(j, k, param->maxWeight, param->minWeight);
 															std::cout << j <<","<< k << ":" << w << std::endl;
@@ -1143,8 +1161,8 @@ void Train(const int numTrain, const int epochs) {
 															double conductancePrevGp = static_cast<AnalogNVM*>(arrayHO->cell[0][0])->conductanceGpPrev;
 															double conductancePrevGn = static_cast<AnalogNVM*>(arrayHO->cell[0][0])->conductanceGnPrev;
 															
-														    arrayHO->WriteCell(j, k, weight2[j][k]-0.5, param->maxWeight, param->minWeight, false);
-															//arrayHO->ReWriteCell(j, k, weight2[j][k], param->maxWeight, param->minWeight); // regular true: weight update 사용, false: 비례하여 update 
+														    //arrayHO->WriteCell(j, k, weight2[j][k]-0.5, param->maxWeight, param->minWeight, false);
+															arrayHO->ReWriteCell(j, k, weight2[j][k], param->maxWeight, param->minWeight); // regular true: weight update 사용, false: 비례하여 update 
 															//weight2[j][k] = arrayHO->ConductanceToWeight(j, k, param->maxWeight, param->minWeight);
 															numWriteCellPerOperation += 1;
 															if (static_cast<AnalogNVM*>(arrayHO->cell[j][k])->writeLatencyLTP > maxLatencyLTP) {

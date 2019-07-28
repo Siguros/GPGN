@@ -488,7 +488,7 @@ RealDevice::RealDevice(int x, int y) {
 	std::mt19937 localGen;	// It's OK not to use the external gen, since here the device-to-device vairation is a one-time deal
 	localGen.seed(std::time(0));
 	/*PCM Properties*/
-	PCMActivity = 0.3;
+	PCMActivity = 0.9;
 	PCMActivityOn =false;
 	PCMON = true;
 	SaturationPCM = true;
@@ -498,8 +498,8 @@ RealDevice::RealDevice(int x, int y) {
 	/* Device-to-device weight update variation */
 	NL_LTP =0;	// LTP nonlinearity
 	NL_LTD =0;	// LTD nonlinearity
-	NL_LTP_Gp = 2.4;
-	NL_LTP_Gn = 2.4;
+	NL_LTP_Gp = 1.0;
+	NL_LTP_Gn = 1.0;
 	sigmaDtoD = 0;	// Sigma of device-to-device weight update vairation in gaussian distribution
 	gaussian_dist2 = new std::normal_distribution<double>(0, sigmaDtoD);	// Set up mean and stddev for device-to-device weight update vairation
 	paramALTP = getParamA(NL_LTP + (*gaussian_dist2)(localGen)) * maxNumLevelLTP;	// Parameter A for LTP nonlinearity
@@ -512,8 +512,8 @@ RealDevice::RealDevice(int x, int y) {
 	paramA_RESET = getParamA(NL_RESET + (*gaussian_dist2)(localGen))*maxRESETLEVEL;
 	RandGen.seed(std::time(0));
 	/* Cycle-to-cycle weight update variation */
-	//sigmaCtoC = 0.035 * (maxConductance - minConductance);	// Sigma of cycle-to-cycle weight update vairation: defined as the percentage of conductance range
 	sigmaCtoC = 0;
+	//sigmaCtoC = 0.035 * (maxConductance - minConductance);	                // Sigma of cycle-to-cycle weight update vairation: defined as the percentage of conductance range
 	gaussian_dist3 = new std::normal_distribution<double>(0, sigmaCtoC);    // Set up mean and stddev for cycle-to-cycle weight update vairation
 
 	/* Conductance range variation */
@@ -735,7 +735,7 @@ void RealDevice::Erase()
 		double conductancenew = conductance;
 
 		extern std::mt19937 gen;
-		if (sigmaCtoC != 0) {
+		if (sigmaCtoC && numPulse != 0) {
 			conductancenewGp += (*gaussian_dist3)(gen)*sqrt(abs(numPulse));
 			//conductancenewGn += (*gaussian_dist3)(gen)*sqrt(abs(numPulse));
 		}
